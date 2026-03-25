@@ -67,9 +67,30 @@ Use Slack mrkdwn syntax. Run `/slack-formatting` for the full reference. Key rul
 
 No `##` headings. No `[links](url)`. No `**double stars**`.
 
+### QQ/OneBot (folder starts with `qq-`)
+
+- Plain text formatting (no markdown rendering in QQ)
+- `•` bullet points
+- No `##` headings, no `**bold**`, no `[links](url)`
+- Keep messages concise
+
 ### Discord (folder starts with `discord_`)
 
 Standard Markdown: `**bold**`, `*italic*`, `[links](url)`, `# headings`.
+
+### Sending Images (all channels)
+
+To send an image, use markdown image syntax in your output:
+
+```
+![description](https://example.com/image.png)
+```
+
+The system automatically converts this to the correct format for each channel. Supported sources:
+- **URLs**: `![photo](https://example.com/img.jpg)`
+- **Local files**: `![chart](/workspace/group/chart.png)` — files you create in your workspace
+
+Do NOT use CQ codes, HTML `<img>` tags, or any other format. Only markdown image syntax is supported. Do NOT say you cannot send images — you can, using the syntax above.
 
 ---
 

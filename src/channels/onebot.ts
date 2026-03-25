@@ -1,7 +1,11 @@
+import fs from 'fs';
+import path from 'path';
+
 import { WebSocket } from 'ws';
 
 import { logger } from '../logger.js';
 import { readEnvFile } from '../env.js';
+import { GROUPS_DIR } from '../config.js';
 import { registerChannel, ChannelOpts } from './registry.js';
 import {
   Channel,
@@ -58,11 +62,55 @@ export interface OneBotChannelOpts {
 }
 
 /**
+ * Resolve an image path from agent output to a value NapCatQQ can use.
+ *
+ * The agent runs inside a container where the group folder is mounted at
+ * /workspace/group. A path like `/workspace/group/chart.png` maps to
+ * `groups/<folder>/chart.png` on the host.
+ *
+ * - HTTP(S) URLs → passed through as-is
+ * - Container paths (/workspace/group/...) → resolved to host path, then base64-encoded
+ * - Host-relative paths → resolved against GROUPS_DIR, then base64-encoded
+ * - Already base64 (base64://) → passed through
+ */
+function resolveImageFile(raw: string, groupFolder?: string): string {
+  // URLs — pass through
+  if (/^https?:\/\//i.test(raw)) return raw;
+  // Already base64
+  if (raw.startsWith('base64://')) return raw;
+
+  // Container path → host path
+  let hostPath = raw;
+  if (raw.startsWith('/workspace/group/') && groupFolder) {
+    hostPath = path.join(GROUPS_DIR, groupFolder, raw.slice('/workspace/group/'.length));
+  } else if (raw.startsWith('/workspace/group') && groupFolder) {
+    hostPath = path.join(GROUPS_DIR, groupFolder, raw.slice('/workspace/group'.length));
+  }
+
+  // Try to read as local file and base64-encode it
+  try {
+    const resolved = path.resolve(hostPath);
+    if (fs.existsSync(resolved)) {
+      const data = fs.readFileSync(resolved);
+      return `base64://${data.toString('base64')}`;
+    }
+  } catch {
+    // fall through
+  }
+
+  // Last resort — return as file:// URI for NapCat to try
+  return raw.startsWith('/') ? `file://${raw}` : raw;
+}
+
+/**
  * Convert text (possibly containing markdown images) into OneBot v11 message segments.
- * Markdown images `![alt](url)` become `{ type: 'image', data: { file: url } }`.
+ * Markdown images `![alt](url)` become `{ type: 'image', data: { file: ... } }`.
  * Remaining text becomes `{ type: 'text', data: { text: '...' } }`.
  */
-function textToSegments(text: string): OneBotMessageSegment[] | string {
+function textToSegments(
+  text: string,
+  groupFolder?: string,
+): OneBotMessageSegment[] | string {
   const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
   if (!imgRegex.test(text)) return text;
 
@@ -77,7 +125,8 @@ function textToSegments(text: string): OneBotMessageSegment[] | string {
     if (before) {
       segments.push({ type: 'text', data: { text: before } });
     }
-    segments.push({ type: 'image', data: { file: match[2] } });
+    const file = resolveImageFile(match[2], groupFolder);
+    segments.push({ type: 'image', data: { file } });
     lastIndex = match.index + match[0].length;
   }
 
@@ -285,7 +334,7 @@ export class OneBotChannel implements Channel {
       const id = jid.replace(/^qq:/, '');
       const group = this.opts.registeredGroups()[jid];
       const isGroup = group !== undefined;
-      const message = textToSegments(text);
+      const message = textToSegments(text, group?.folder);
 
       if (isGroup) {
         await this.callApi('send_group_msg', {
