@@ -407,7 +407,8 @@ async function runQuery(
         'TeamCreate', 'TeamDelete', 'SendMessage',
         'TodoWrite', 'ToolSearch', 'Skill',
         'NotebookEdit',
-        'mcp__nanoclaw__*'
+        'mcp__nanoclaw__*',
+        'mcp__obsidian__*'
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
@@ -421,6 +422,15 @@ async function runQuery(
             NANOCLAW_CHAT_JID: containerInput.chatJid,
             NANOCLAW_GROUP_FOLDER: containerInput.groupFolder,
             NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
+          },
+        },
+        obsidian: {
+          command: 'uvx',
+          args: ['mcp-obsidian'],
+          env: {
+            OBSIDIAN_API_KEY: '4ffaa0cf992bf12d1bfa57676f312124ca070b3f10d617e7a44fafdb744d839c',
+            OBSIDIAN_HOST: 'host.docker.internal',
+            OBSIDIAN_PORT: '27124',
           },
         },
       },
