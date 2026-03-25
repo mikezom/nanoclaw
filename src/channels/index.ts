@@ -7,6 +7,9 @@
 
 // slack
 
+// onebot (QQ via NapCatQQ)
+import './onebot.js';
+
 // telegram
 import './telegram.js';
 
