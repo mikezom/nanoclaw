@@ -82,9 +82,17 @@ function resolveImageFile(raw: string, groupFolder?: string): string {
   // Container path → host path
   let hostPath = raw;
   if (raw.startsWith('/workspace/group/') && groupFolder) {
-    hostPath = path.join(GROUPS_DIR, groupFolder, raw.slice('/workspace/group/'.length));
+    hostPath = path.join(
+      GROUPS_DIR,
+      groupFolder,
+      raw.slice('/workspace/group/'.length),
+    );
   } else if (raw.startsWith('/workspace/group') && groupFolder) {
-    hostPath = path.join(GROUPS_DIR, groupFolder, raw.slice('/workspace/group'.length));
+    hostPath = path.join(
+      GROUPS_DIR,
+      groupFolder,
+      raw.slice('/workspace/group'.length),
+    );
   }
 
   // Try to read as local file and base64-encode it
