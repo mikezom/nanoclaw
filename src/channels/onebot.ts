@@ -57,6 +57,40 @@ export interface OneBotChannelOpts {
   registeredGroups: () => Record<string, RegisteredGroup>;
 }
 
+/**
+ * Convert text (possibly containing markdown images) into OneBot v11 message segments.
+ * Markdown images `![alt](url)` become `{ type: 'image', data: { file: url } }`.
+ * Remaining text becomes `{ type: 'text', data: { text: '...' } }`.
+ */
+function textToSegments(
+  text: string,
+): OneBotMessageSegment[] | string {
+  const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  if (!imgRegex.test(text)) return text;
+
+  // Reset lastIndex after test()
+  imgRegex.lastIndex = 0;
+  const segments: OneBotMessageSegment[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = imgRegex.exec(text)) !== null) {
+    const before = text.slice(lastIndex, match.index);
+    if (before) {
+      segments.push({ type: 'text', data: { text: before } });
+    }
+    segments.push({ type: 'image', data: { file: match[2] } });
+    lastIndex = match.index + match[0].length;
+  }
+
+  const tail = text.slice(lastIndex);
+  if (tail) {
+    segments.push({ type: 'text', data: { text: tail } });
+  }
+
+  return segments;
+}
+
 export class OneBotChannel implements Channel {
   name = 'onebot';
 
@@ -251,19 +285,19 @@ export class OneBotChannel implements Channel {
 
     try {
       const id = jid.replace(/^qq:/, '');
-      // Determine if group or private based on registered group info
       const group = this.opts.registeredGroups()[jid];
       const isGroup = group !== undefined;
+      const message = textToSegments(text);
 
       if (isGroup) {
         await this.callApi('send_group_msg', {
           group_id: Number(id),
-          message: text,
+          message,
         });
       } else {
         await this.callApi('send_private_msg', {
           user_id: Number(id),
-          message: text,
+          message,
         });
       }
       logger.info({ jid, length: text.length }, 'OneBot message sent');
