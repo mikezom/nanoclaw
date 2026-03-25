@@ -62,9 +62,7 @@ export interface OneBotChannelOpts {
  * Markdown images `![alt](url)` become `{ type: 'image', data: { file: url } }`.
  * Remaining text becomes `{ type: 'text', data: { text: '...' } }`.
  */
-function textToSegments(
-  text: string,
-): OneBotMessageSegment[] | string {
+function textToSegments(text: string): OneBotMessageSegment[] | string {
   const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
   if (!imgRegex.test(text)) return text;
 
