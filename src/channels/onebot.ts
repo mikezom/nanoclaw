@@ -111,29 +111,37 @@ function resolveImageFile(raw: string, groupFolder?: string): string {
 }
 
 /**
- * Convert text (possibly containing markdown images) into OneBot v11 message segments.
- * Markdown images `![alt](url)` become `{ type: 'image', data: { file: ... } }`.
- * Remaining text becomes `{ type: 'text', data: { text: '...' } }`.
+ * Combined regex that matches either:
+ *   - Markdown images: ![alt](url)
+ *   - CQ image codes: [CQ:image,file=...] (with optional extra params)
+ */
+const IMAGE_PATTERN =
+  /!\[([^\]]*)\]\(([^)]+)\)|\[CQ:image[, ]+file=([^\],]+)[^\]]*\]/g;
+
+/**
+ * Convert text (possibly containing markdown images or CQ codes) into
+ * OneBot v11 message segments. Both formats become proper image segments;
+ * remaining text becomes text segments.
  */
 function textToSegments(
   text: string,
   groupFolder?: string,
 ): OneBotMessageSegment[] | string {
-  const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  if (!imgRegex.test(text)) return text;
+  if (!IMAGE_PATTERN.test(text)) return text;
 
-  // Reset lastIndex after test()
-  imgRegex.lastIndex = 0;
+  IMAGE_PATTERN.lastIndex = 0;
   const segments: OneBotMessageSegment[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = imgRegex.exec(text)) !== null) {
+  while ((match = IMAGE_PATTERN.exec(text)) !== null) {
     const before = text.slice(lastIndex, match.index);
     if (before) {
       segments.push({ type: 'text', data: { text: before } });
     }
-    const file = resolveImageFile(match[2], groupFolder);
+    // match[2] = markdown url, match[3] = CQ file value
+    const rawFile = match[2] || match[3];
+    const file = resolveImageFile(rawFile, groupFolder);
     segments.push({ type: 'image', data: { file } });
     lastIndex = match.index + match[0].length;
   }
