@@ -431,6 +431,8 @@ async function runQuery(
             OBSIDIAN_API_KEY: '4ffaa0cf992bf12d1bfa57676f312124ca070b3f10d617e7a44fafdb744d839c',
             OBSIDIAN_HOST: 'host.docker.internal',
             OBSIDIAN_PORT: '27123',
+            OBSIDIAN_PROTOCOL: 'https',
+            OBSIDIAN_VERIFY_SSL: 'false',
           },
         },
       },
