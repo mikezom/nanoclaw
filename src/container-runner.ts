@@ -238,7 +238,10 @@ async function buildContainerArgs(
     const apiKey = process.env.ANTHROPIC_API_KEY || envVars.ANTHROPIC_API_KEY;
     if (apiKey) {
       args.push('-e', `ANTHROPIC_API_KEY=${apiKey}`);
-      logger.info({ containerName }, 'OneCLI unavailable — using ANTHROPIC_API_KEY fallback');
+      logger.info(
+        { containerName },
+        'OneCLI unavailable — using ANTHROPIC_API_KEY fallback',
+      );
     } else {
       logger.warn(
         { containerName },
